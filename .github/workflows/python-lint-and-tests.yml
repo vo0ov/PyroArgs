@@ -1,0 +1,38 @@
+name: Python Package
+
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: '3.11'
+
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install flake8 aiounittest pyrogram tgcrypto
+              shell: bash
+
+            - name: Lint with flake8
+              run: |
+                  # Stop the build if there are Python syntax errors or undefined names
+                  flake8 PyroArgs tests --count --select=E9,F63,F7,F82 --show-source --statistics
+                  # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+                  flake8 PyroArgs tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+              shell: bash
+
+            - name: Run tests
+              run: |
+                  python -m unittest discover tests
+              shell: bash
