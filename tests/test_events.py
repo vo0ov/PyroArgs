@@ -1,56 +1,70 @@
 # tests/test_events.py
-import aiounittest
-from PyroArgs import PyroArgs, types, errors
-from pyrogram import Client
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+from PyroArgs.types.events import Events
+from PyroArgs.errors.arguments_error import ArgumentsError
+from PyroArgs.errors.command_error import CommandError
+from PyroArgs.errors.permissions_error import PermissionsError
 
 
-class TestEvents(aiounittest.AsyncTestCase):
+@pytest.fixture
+def events():
+    return Events()
 
-    def setUp(self):
-        self.bot = MagicMock(spec=Client)
-        self.pyro_args = PyroArgs(self.bot, prefixes=["/"])
 
-    async def test_arguments_error_event(self):
-        handler_called = False
+@pytest.mark.asyncio
+async def test_on_use_command(events):
+    handler = AsyncMock()
+    events.on_use_command(handler)
 
-        async def arguments_error_handler(message: types.Message, error: errors.ArgumentsError):
-            nonlocal handler_called
-            handler_called = True
+    await events._trigger_use_command("Test message", "start", ["arg1"], {"key1": "value1"})
+    handler.assert_awaited_once_with("Test message", "start", [
+                                     "arg1"], {"key1": "value1"})
 
-        self.pyro_args.events.on_arguments_error(arguments_error_handler)
 
-        @self.pyro_args.command()
-        async def test_cmd(message: types.Message, arg1: str):
-            pass
+@pytest.mark.asyncio
+async def test_on_arguments_error(events):
+    handler = AsyncMock()
+    events.on_arguments_error(handler)
 
-        message = MagicMock(spec=types.Message)
-        message.text = "/test_cmd"
-        message.custom_data = None
+    error = ArgumentsError(
+        command="start",
+        message="Test message",
+        parsed_args=["arg1"],
+        parsed_kwargs={"key1": "value1"},
+        missing_arg="arg2",
+        arg_position=2
+    )
+    await events._trigger_arguments_error("Test message", error)
+    handler.assert_awaited_once_with("Test message", error)
 
-        client = self.bot
-        await test_cmd._pyroargs_handler(client, message)
 
-        self.assertTrue(handler_called)
+@pytest.mark.asyncio
+async def test_on_command_error(events):
+    handler = AsyncMock()
+    events.on_command_error(handler)
 
-    async def test_command_error_event(self):
-        handler_called = False
+    error = CommandError(
+        command="start",
+        message="Test message",
+        parsed_args=["arg1"],
+        parsed_kwargs={"key1": "value1"},
+        error_message="An error occurred"
+    )
+    await events._trigger_command_error("Test message", error)
+    handler.assert_awaited_once_with("Test message", error)
 
-        async def command_error_handler(message: types.Message, error: errors.CommandError):
-            nonlocal handler_called
-            handler_called = True
 
-        self.pyro_args.events.on_command_error(command_error_handler)
+@pytest.mark.asyncio
+async def test_on_permissions_error(events):
+    handler = AsyncMock()
+    events.on_permissions_error(handler)
 
-        @self.pyro_args.command()
-        async def test_cmd(message: types.Message):
-            raise Exception("Test exception")
-
-        message = MagicMock(spec=types.Message)
-        message.text = "/test_cmd"
-        message.custom_data = None
-
-        client = self.bot
-        await test_cmd._pyroargs_handler(client, message)
-
-        self.assertTrue(handler_called)
+    error = PermissionsError(
+        command="start",
+        message="Test message",
+        parsed_args=["arg1"],
+        parsed_kwargs={"key1": "value1"}
+    )
+    await events._trigger_permissions_error("Test message", error)
+    handler.assert_awaited_once_with("Test message", error)

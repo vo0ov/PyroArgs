@@ -8,8 +8,14 @@ build/
 dist/
 
 # Pyrogram
-*.session
-*.session-journal
+*.session*
+
+# Editor
+.vscode/
 
 # Others
 HELP.md
+test_bot.py
+config.py
+docs/
+.pytest_cache/

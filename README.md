@@ -1,4 +1,6 @@
-# PyroArgs
+![PyPI - Downloads](https://img.shields.io/pypi/dm/PyroArgs?label=%D0%A1%D0%BA%D0%B0%D1%87%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9) ![PyPI - License](https://img.shields.io/pypi/l/PyroArgs?label=%D0%9B%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F)
+
+# [PyroArgs на PyPi](https://pypi.org/project/PyroArgs/)
 
 `PyroArgs` — это библиотека для удобной обработки аргументов команд в [Pyrogram](https://github.com/pyrogram/pyrogram). Она позволяет легко создавать команды с аргументами, обрабатывать ошибки и расширять функциональность с помощью системы событий.
 
@@ -11,6 +13,7 @@
 - **Совместимость с пользовательскими фильтрами и группами обработчиков** из Pyrogram.
 
 ## Установка
+
 ```bash
 pip install PyroArgs
 ```
@@ -18,12 +21,14 @@ pip install PyroArgs
 ## Использование
 
 ### Импорт необходимых модулей
+
 ```python
 from pyrogram import Client
 from PyroArgs import PyroArgs, types, errors
 ```
 
 ### Инициализация клиента и `PyroArgs`
+
 ```python
 # Инициализируйте клиент Pyrogram с вашими учетными данными
 bot = Client("my_bot", api_id=..., api_hash="...")  # Замените '...' на ваши api_id и api_hash
@@ -33,6 +38,7 @@ pyro_args = PyroArgs(bot, prefixes=["/"])
 ```
 
 ### Создание команды
+
 ```python
 @pyro_args.command()
 async def greet(message: types.Message, name: str):
@@ -40,6 +46,7 @@ async def greet(message: types.Message, name: str):
 ```
 
 ### Обработка ошибок аргументов
+
 ```python
 @pyro_args.events.on_arguments_error
 async def handle_arguments_error(message: types.Message, error: errors.ArgumentsError):
@@ -47,6 +54,7 @@ async def handle_arguments_error(message: types.Message, error: errors.Arguments
 ```
 
 ### Обработка ошибок команд
+
 ```python
 @pyro_args.events.on_command_error
 async def handle_command_error(message: types.Message, error: errors.CommandError):
@@ -54,12 +62,14 @@ async def handle_command_error(message: types.Message, error: errors.CommandErro
 ```
 
 ### Запуск бота
+
 ```python
 if __name__ == "__main__":
     bot.run()
 ```
 
 ## Полный код из примера выше:
+
 ```python
 from pyrogram import Client
 from PyroArgs import PyroArgs, types, errors
@@ -106,6 +116,7 @@ if __name__ == "__main__":
 - [`full_featured_bot.py`](examples/full_featured_bot.py): Комплексный бот с полной обработкой ошибок.
 
 ## Вклад в проект
+
 Если вы хотите внести свой вклад в развитие `PyroArgs`:
 
 - Создайте форк репозитория.
@@ -114,6 +125,7 @@ if __name__ == "__main__":
 - Откройте pull request в основной репозиторий.
 
 ## Лицензия
+
 Этот проект распространяется под лицензией MIT. Подробности см. в файле [`LICENSE`](LICENSE) или ниже:
 
 ```
