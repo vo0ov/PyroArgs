@@ -41,6 +41,7 @@ class PyroArgs:
     async def __run_command(self, func: Callable[..., Any],
                             command_names: str, message: Message,
                             permissions_level: int) -> Any:
+        message.text = message.text or message.caption
         result_name = command_names[0]
         command_prefix = None
         for prefix in self.prefixes:
@@ -116,7 +117,8 @@ class PyroArgs:
                 message=message,
                 parsed_args=positional_args,
                 parsed_kwargs=keyword_args,
-                error_message=str(error)
+                error_message=str(error),
+                original_error=error
             )
             raise command_error
 
@@ -149,6 +151,7 @@ class PyroArgs:
                     await self.events._trigger_arguments_error(message, error)
                 except CommandError as error:
                     await self.events._trigger_command_error(message, error)
+                    raise error.original_error
                 except PermissionsError as error:
                     await self.events._trigger_permissions_error(message, error)
 

@@ -108,7 +108,10 @@ async def test_run_command_command_error(pyroargs):
     # Мокируем функции обработчика событий
     pyroargs.events._trigger_command_error = AsyncMock()
 
-    await handler(pyroargs.bot, mock_message)
+    try:
+        await handler(pyroargs.bot, mock_message)
+    except ValueError as e:
+        assert str(e) == "Intentional Error"
 
     pyroargs.events._trigger_command_error.assert_awaited_once()
 
