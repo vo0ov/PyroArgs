@@ -1,126 +1,43 @@
 # PyroArgs/pyroargs.py
-from typing import Callable, List, Any, Dict, TypeVar
-from pyrogram import Client
-from pyrogram.handlers import MessageHandler
+from typing import Callable, List, Any, TypeVar, Tuple, Dict, Optional, Union
 from pyrogram.filters import Filter, create, command
-from inspect import signature, Parameter
+from pyrogram.handlers import MessageHandler
+from pyrogram import Client
 
-
-from .types import Message
+from .parser import get_command_and_args, parse_command
+from .types.commandRegistry import CommandRegistry
+from .types.command import Command
 from .types.events import Events
 from .utils import DataHolder
-from .types.command import Command
-from .types.commandRegistry import CommandRegistry
-from .errors import ArgumentsError, CommandError, PermissionsError
+from .types import Message
+from . import errors
+
 
 F = TypeVar('F', bound=Callable[..., Any])
 
 
 class PyroArgs:
-    def __init__(self, bot: Client, prefixes: List[str] = ['/']) -> None:
+    def __init__(self, bot: Client, prefixes: Union[List[str], Tuple[str], str] = ['/'], log_file: str = None) -> None:
         # Переменные класса
         self.bot: Client = bot
-        self.prefixes: List[str] = prefixes
-        self.events: Events = Events()
+        self.prefixes: Union[List[str], Tuple[str], str] = prefixes
+        self.events: Events = Events(log_file)
         self.registry: CommandRegistry = CommandRegistry()
-        self.permissions_checker_func: Callable[[
-            int, Message], bool] = lambda _, __: True
+        self.permission_checker_func: Callable[[
+            int, Message], bool] = None
+
         # Сохраняем объекты для доступа в плагинах
         DataHolder.ClientObj = self.bot
         DataHolder.PyroArgsObj = self
-        # Функции для настройки логов
-        self.set_use_command: Callable[...,
-                                       None] = self.events.logger.set_use_command
-        self.set_arguments_error: Callable[...,
-                                           None] = self.events.logger.set_arguments_error
-        self.set_command_error: Callable[...,
-                                         None] = self.events.logger.set_command_error
-        self.set_permissions_error: Callable[...,
-                                             None] = self.events.logger.set_permissions_error
 
-    async def __run_command(self, func: Callable[..., Any],
-                            command_names: str, message: Message,
-                            permissions_level: int) -> Any:
-        message.text = message.text or message.caption
-        result_name = command_names[0]
-        command_prefix = None
-        for prefix in self.prefixes:
-            for command_name in command_names:
-                if message.text.startswith(prefix + command_name):
-                    command_prefix = prefix + command_name
-                    break
-
-        if not self.permissions_checker_func(permissions_level, message):
-            raise PermissionsError(command=result_name,
-                                   message=message,
-                                   parsed_args=[],
-                                   parsed_kwargs={})
-
-        # Извлекаем аргументы после команды, включая новые строки
-        args_text = message.text[len(command_prefix):].strip()
-
-        func_signature = list(signature(func).parameters.values())[
-            1:]  # Пропускаем 'message'
-
-        pos_index: int = 0
-        keyword_args: Dict[str, Any] = {}
-        positional_args: List[Any] = []
-
-        # Разделяем аргументы на позиции и ключевые аргументы
-        for param in func_signature:
-            if param.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD):
-                if pos_index < len(args_text):
-                    # Берем первый аргумент до пробела
-                    if ' ' in args_text:
-                        arg, args_text = args_text.split(' ', 1)
-                    else:
-                        arg, args_text = args_text, ''
-                    positional_args.append(arg)
-                    pos_index += 1
-                else:
-                    # Определяем номер пропущенного аргумента
-                    missing_arg = param.name
-                    # Позиция аргумента (1-индексация)
-                    arg_position = pos_index + 1
-                    raise ArgumentsError(
-                        command=result_name,
-                        message=message,
-                        missing_arg=missing_arg,
-                        arg_position=arg_position,
-                        parsed_args=positional_args,
-                        parsed_kwargs=keyword_args
-                    )
-            elif param.kind == Parameter.KEYWORD_ONLY:
-                if args_text:
-                    keyword_args[param.name] = args_text
-                    break
-                elif param.default is not Parameter.empty:
-                    keyword_args[param.name] = param.default
-                else:
-                    missing_arg = param.name
-                    arg_position = pos_index + 1
-                    raise ArgumentsError(
-                        command=result_name,
-                        message=message,
-                        missing_arg=missing_arg,
-                        arg_position=arg_position,
-                        parsed_args=positional_args,
-                        parsed_kwargs=keyword_args
-                    )
-
-        try:
-            await func(message, *positional_args, **keyword_args)
-            return positional_args, keyword_args
-        except Exception as error:
-            command_error = CommandError(
-                command=result_name,
-                message=message,
-                parsed_args=positional_args,
-                parsed_kwargs=keyword_args,
-                error_message=str(error),
-                original_error=error
-            )
-            raise command_error
+        # Логи
+        self.setup_logs = self.events.logger.setup_logs
+        self.before_use_command_message = self.events.logger.before_use_command_message
+        self.after_use_command_message = self.events.logger.after_use_command_message
+        self.missing_argument_error_message = self.events.logger.missing_argument_error_message
+        self.argument_type_error_message = self.events.logger.argument_type_error_message
+        self.command_error_message = self.events.logger.command_error_message
+        self.permissions_error_message = self.events.logger.permissions_error_message
 
     def command(
         self,
@@ -132,53 +49,138 @@ class PyroArgs:
         aliases: List[str] = None,
         command_meta_data: Any = None,
         category: str = 'General',
-        custom_filters: Filter = create(lambda *_: True),
-        group: int = 0,
-        custom_data: Any = None
+        filters: Filter = create(lambda *_: True),
+        group: int = 0
     ) -> Callable[[F], F]:
         def decorator(func: F) -> F:
-            result_name = name or func.__name__
-            all_names = [result_name, *(aliases or [])]
+            # ** Параметры команды **
+            command_name = name or func.__name__
+            command_aliases = aliases or []
+            all_names = [command_name, *command_aliases]
 
+            # ** Обработчик команды **
             async def handler(client: Client, message: Message) -> None:
-                message.custom_data = custom_data
+                message.command_meta_data = command_meta_data
 
-                try:
-                    parsed_args, parsed_kwargs = await self.__run_command(func, all_names, message, permissions_level)
-                    await self.events._trigger_use_command(
-                        message, result_name, parsed_args, parsed_kwargs)
-                except ArgumentsError as error:
-                    await self.events._trigger_arguments_error(message, error)
-                except CommandError as error:
-                    await self.events._trigger_command_error(message, error)
-                    raise error.original_error
-                except PermissionsError as error:
-                    await self.events._trigger_permissions_error(message, error)
+                # ** Парсинг команды **
+                cmd_text = message.text or message.caption
+                cmd, args = get_command_and_args(cmd_text, self.prefixes)
 
-            # Сохраняем handler для доступа в тестах
-            func._pyroargs_handler = handler
+                # ** Проверка прав **
+                if not await self.__has_permission(command_name, message, permissions_level):
+                    return
 
-            cmd = Command(
-                result_name,
+                # ** Исключения **
+                parsed_args = await self.__parse_arguments(func, args, message)
+                if not parsed_args:
+                    return  # Ошибка уже обрабатывается внутри __parse_arguments
+
+                # ** Выполнение команды **
+                await self.__execute_command(func, message, command_name, args, parsed_args)
+
+            # ** Регистрация команды **
+            self.__register_command(
+                handler,
+                all_names,
+                filters,
+                group,
+                command_name,
                 description,
                 usage,
                 example,
                 permissions_level,
                 aliases,
-                command_meta_data
-            )
-            self.registry.add_command(cmd, category or 'Other')
-            self.bot.add_handler(
-                MessageHandler(
-                    handler,
-                    command(all_names,
-                            self.prefixes) & custom_filters
-                ),
-                group
+                command_meta_data,
+                category
             )
             return func
+
         return decorator
 
-    def permissions_checker(self, func: Callable[[int, Message], bool]) -> Callable[[int, Message], bool]:
-        self.permissions_checker_func = func
+    async def __has_permission(self, command_name: str, message: Message, permissions_level: int) -> bool:
+        if self.permission_checker_func and not await self.permission_checker_func(message, permissions_level):
+            error = errors.CommandPermissionError(
+                command=command_name,
+                message=message,
+                permission_level=permissions_level
+            )
+            await self.events._trigger_command_permission_error(message, error)
+            return False
+        return True
+
+    async def __parse_arguments(self, func: Callable, args: str, message: Message) -> Optional[Tuple[List, Dict]]:
+        try:
+            result_args, result_kwargs = parse_command(func, args)
+            return result_args, result_kwargs
+        except SyntaxError as e:
+            raise e
+        except errors.MissingArgumentError as e:
+            await self.events._trigger_missing_argument_error(message, e)
+        except errors.ArgumentTypeError as e:
+            await self.events._trigger_argument_type_error(message, e)
+        except Exception as e:
+            print(
+                '!!! PYROARGS ERROR !!!',
+                'PLEASE REPORT THIS ERROR:',
+                'https://github.com/vo0ov/PYPI-PyroArgs/issues',
+                '!!! PYROARGS ERROR !!!',
+                sep='\n'
+            )
+            raise SystemError(e)
+        return None
+
+    async def __execute_command(self, func: Callable, message: Message,
+                                command_name: str, args: str, parsed_args: Tuple[List, Dict]) -> None:
+        result_args, result_kwargs = parsed_args
+        try:
+            await self.events._trigger_before_use_command(
+                message=message,
+                command=command_name,
+                args=result_args,
+                kwargs=result_kwargs
+            )
+            response = await func(message, *result_args, **result_kwargs)
+            await self.events._trigger_after_use_command(
+                message=message,
+                command=command_name,
+                args=result_args,
+                kwargs=result_kwargs
+            )
+            return response
+        except Exception as e:
+            error = errors.CommandError(
+                command=command_name,
+                message=message,
+                parsed_args=result_args,
+                parsed_kwargs=result_kwargs,
+                error_message=str(e),
+                original_error=e
+            )
+            await self.events._trigger_command_error(message, error)
+            raise e
+
+    def __register_command(self, handler, all_names, filters, group, command_name, description,
+                           usage, example, permissions_level, aliases, command_meta_data, category):
+        cmd = Command(
+            command_name,
+            description,
+            usage,
+            example,
+            permissions_level,
+            aliases,
+            command_meta_data
+        )
+        self.registry.add_command(cmd, category or 'Other')
+        self.bot.add_handler(
+            MessageHandler(
+                handler,
+                command(all_names, self.prefixes) & filters
+            ),
+            group
+        )
+
+    def permissions_checker(self, func: Callable[[Message, int], bool]) -> Callable[[Message, int], bool]:
+        self.permission_checker_func = func
         return func
+
+# Hello, @Dogifnf! You are the first one to install this library. :3

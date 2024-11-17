@@ -19,3 +19,4 @@ test_bot.py
 config.py
 docs/
 .pytest_cache/
+temp.py

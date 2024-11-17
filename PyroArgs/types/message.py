@@ -4,4 +4,4 @@ from typing import Any, Optional
 
 
 class Message(BaseMessage):
-    custom_data: Optional[Any] = None
+    command_meta_data: Optional[Any] = None

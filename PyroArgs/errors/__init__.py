@@ -1,7 +1,9 @@
 # PyroArgs/errors/__init__.py
-from .arguments_error import ArgumentsError
-from .command_error import CommandError
-from .permissions_error import PermissionsError
+from .ArgumentsError import ArgumentsError
+from .CommandError import CommandError
+from .CommandPermissionError import CommandPermissionError
+from .MissingArgumentError import MissingArgumentError
+from .ArgumentTypeError import ArgumentTypeError
 
 __all__ = ['ArgumentsError', 'CommandError',
-           'PermissionsError']
+           'CommandPermissionError', 'MissingArgumentError', 'ArgumentTypeError']

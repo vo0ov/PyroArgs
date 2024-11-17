@@ -1,4 +1,4 @@
-# PyroArgs/errors/command_error.py
+# PyroArgs/errors/CommandError.py
 from typing import List, Dict, Any
 from ..types import Message
 
@@ -6,16 +6,16 @@ from ..types import Message
 class CommandError(Exception):
     def __init__(
         self,
-        command: str,  # REQUIRED FOR ALL ERRORS
-        message: Message,  # REQUIRED FOR ALL ERRORS
-        parsed_args: List[Any],  # REQUIRED FOR ALL ERRORS
-        parsed_kwargs: Dict[str, Any],  # REQUIRED FOR ALL ERRORS
+        name: str,
+        message: Message,
+        parsed_args: List[Any],
+        parsed_kwargs: Dict[str, Any],
         error_message: str = None,
         original_error: Exception = None
     ):
-        full_message = f'Command error: Error in command "{command}".'
+        full_message = f'Command error: Error in command "{name}".'
         super().__init__(full_message)
-        self.command = command
+        self.name = name
         self.message = message
         self.parsed_args = parsed_args
         self.parsed_kwargs = parsed_kwargs

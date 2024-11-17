@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='PyroArgs',
-    version='1.2',  # ВЕРСИЯ
+    version='1.3',  # ВЕРСИЯ
     description='Удобная обработка аргументов команд для Pyrogram',
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
