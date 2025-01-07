@@ -47,8 +47,8 @@ def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str])
 
 
 def parse_command(
-    func: Callable, command: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes'),
-    falses: Union[List[str], Tuple[str], str] = ('false', 'no')
+    func: Callable, command: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
+    falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')
 ) -> Any:
     """
     Executes the given function `func` with arguments parsed from the `command` string.
@@ -65,8 +65,8 @@ def parse_command(
     Raises:
         ValueError: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
     """
-    def get_bool(arg: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes'),
-                 falses: Union[List[str], Tuple[str], str] = ('false', 'no')) -> bool:
+    def get_bool(arg: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
+                 falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')) -> bool:
         """
         Converts a string argument to a boolean.
 
@@ -95,9 +95,10 @@ def parse_command(
     signature: inspect.Signature = inspect.signature(func)
     lexer: shlex.shlex = shlex.shlex(command.strip(), posix=True)
     lexer.whitespace_split = True
-    lexer.escapedquotes = '"'
-    lexer.quotes = '"'
+    lexer.escapedquotes = ''
+    lexer.quotes = ''
     lexer.whitespace = ' '
+    lexer.commenters = ''
     args: List[str] = list(lexer)
 
     args_counter: int = 0
