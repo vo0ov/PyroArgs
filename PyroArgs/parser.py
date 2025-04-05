@@ -19,17 +19,14 @@ def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str])
     Finally, it takes the rest of the string as the arguments, strips it of any
     whitespaces and returns a tuple with the command and arguments.
 
-    Parameters
-    ----------
-    text : str
-        The string to parse.
-    prefixes : List[str] or Tuple[str] or str
-        The list/tuple or single prefix to check against.
+    ## Parameters
+        text (``str``):
+            The string to parse.
+        prefixes : (``List[str]`` or ``Tuple[str]`` or ``str``):
+            The ``list/tuple`` or single prefix to check against.
 
-    Returns
-    -------
-    Tuple[str, str]
-        The command and arguments as a tuple.
+    ## Returns
+        ``Tuple[str, str]``: The command and arguments as a tuple.
     """
     text = text.strip()
 
@@ -47,39 +44,56 @@ def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str])
 
 
 def parse_command(
-    func: Callable, command: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
+    func: Callable,
+    command: str,
+    trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
     falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')
 ) -> Any:
     """
     Executes the given function `func` with arguments parsed from the `command` string.
 
-    Args:
-        func (Callable): The function to be executed.
-        command (str): The command string containing arguments for the function.
-        trues (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as True.
-        falses (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as False.
+    ## Parameters
+        func (``Callable``):
+            The function to be executed.
 
-    Returns:
-        Any: The result of executing `func` with the parsed arguments.
+        command (``str``):
+            The command string containing arguments for the function.
 
-    Raises:
-        ValueError: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
+        trues (``Union[List[str], Tuple[str], str]``, *optional*):
+            A list or tuple of strings to interpret as True.
+
+        falses (``Union[List[str], Tuple[str], str]``, *optional*):
+            A list or tuple of strings to interpret as False.
+
+    ## Returns
+        ``Any``: The result of executing `func` with the parsed arguments.
+
+    ## Raises
+        ``ValueError``: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
     """
-    def get_bool(arg: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
-                 falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')) -> bool:
+    def get_bool(
+            arg: str,
+            trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
+            falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')
+    ) -> bool:
         """
         Converts a string argument to a boolean.
 
-        Args:
-            arg (str): The argument to be converted.
-            trues (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as True.
-            falses (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as False.
+        ## Parameters
+            arg (``str``):
+                The argument to be converted.
 
-        Returns:
-            bool: The converted boolean value.
+            trues (``Union[List[str], Tuple[str], str]``, *optional*):
+                A list or tuple of strings to interpret as True.
 
-        Raises:
-            ValueError: If the argument is not in the trues or falses lists.
+            falses (``Union[List[str], Tuple[str], str]``, *optional*):
+                A list or tuple of strings to interpret as False.
+
+        ## Returns
+            ``bool``: The converted boolean value.
+
+        ## Raises
+            ``ValueError``: If the argument is not in the trues or falses lists.
         """
         if isinstance(trues, str):
             trues = [trues]
@@ -96,7 +110,7 @@ def parse_command(
     lexer: shlex.shlex = shlex.shlex(command.strip(), posix=True)
     lexer.whitespace_split = True
     lexer.escapedquotes = ''
-    lexer.quotes = ''
+    lexer.quotes = ' '
     lexer.whitespace = ' '
     lexer.commenters = ''
     args: List[str] = list(lexer)
