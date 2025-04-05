@@ -36,7 +36,7 @@ class CommandRegistry:
             for cmd in cmds:
                 yield cmd
 
-    def iterate_categories_with_commands(self) -> Iterator[Tuple[str, List[Command]]]:
+    def iterate_categories_with_commands(self) -> Iterator[Tuple[str, List[Command]]]:  # noqa
         """Итерация по всем категориям и командам."""
         for category in self.commands:
             yield category, self.commands[category]
