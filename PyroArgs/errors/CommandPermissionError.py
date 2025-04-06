@@ -9,7 +9,8 @@ class CommandPermissionError(Exception):
         message: Message,
         permission_level: int
     ):
-        full_message = f'Permissions error: User does not have permission to use command "{name}".'
+        full_message = ('Permissions error: User does not '
+                        f'have permission to use command "{name}".')
         super().__init__(full_message)
         self.name = name
         self.message = message

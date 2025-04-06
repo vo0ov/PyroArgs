@@ -6,4 +6,5 @@ from .MissingArgumentError import MissingArgumentError
 from .ArgumentTypeError import ArgumentTypeError
 
 __all__ = ['ArgumentsError', 'CommandError',
-           'CommandPermissionError', 'MissingArgumentError', 'ArgumentTypeError']
+           'CommandPermissionError', 'MissingArgumentError',
+           'ArgumentTypeError']

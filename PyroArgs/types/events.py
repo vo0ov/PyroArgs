@@ -24,18 +24,17 @@ class Events:
         self._on_missing_argument_error_handlers: List[ErrorHandler] = []
         self._on_argument_type_error_handlers: List[ErrorHandler] = []
         self._on_command_error_handlers: List[CommandErrorHandler] = []
-        self._on_command_permission_error_handlers: List[PermissionErrorHandler] = [
-        ]
+        self._on_command_permission_error_handlers: List[PermissionErrorHandler] = []  # noqa
         self.logger: Logger = Logger(log_file)
 
     # region Декораторы
     def on_before_use_command(self, func: CommandHandler) -> CommandHandler:
-        """Декоратор для регистрации обработчиков успешного использования команды."""
+        """Декоратор для регистрации обработчиков успешного использования команды."""  # noqa
         self._on_before_use_command_handlers.append(func)
         return func
 
     def on_after_use_command(self, func: CommandHandler) -> CommandHandler:
-        """Декоратор для регистрации обработчиков успешного использования команды."""
+        """Декоратор для регистрации обработчиков успешного использования команды."""  # noqa
         self._on_after_use_command_handlers.append(func)
         return func
 
@@ -49,12 +48,18 @@ class Events:
         self._on_argument_type_error_handlers.append(func)
         return func
 
-    def on_command_error(self, func: CommandErrorHandler) -> CommandErrorHandler:
+    def on_command_error(
+            self,
+            func: CommandErrorHandler
+    ) -> CommandErrorHandler:
         """Декоратор для регистрации обработчиков ошибок команд."""
         self._on_command_error_handlers.append(func)
         return func
 
-    def on_command_permission_error(self, func: PermissionErrorHandler) -> PermissionErrorHandler:
+    def on_command_permission_error(
+            self,
+            func: PermissionErrorHandler
+    ) -> PermissionErrorHandler:
         """Декоратор для регистрации обработчиков ошибок команд."""
         self._on_command_permission_error_handlers.append(func)
         return func
@@ -62,39 +67,73 @@ class Events:
 
     # region Триггеры
     async def _trigger_before_use_command(
-        self, message: Message, command: str, args: List[Any], kwargs: Dict[str, Any]
+        self,
+        message: Message,
+        command: str,
+        args: List[Any],
+        kwargs: Dict[str, Any]
     ) -> None:
-        await self.logger._trigger_before_use_command(message, command, args, kwargs)
+        await self.logger._trigger_before_use_command(
+            message,
+            command,
+            args,
+            kwargs
+        )
         for handler in self._on_before_use_command_handlers:
             await handler(message, command, args, kwargs)
 
     async def _trigger_after_use_command(
-        self, message: Message, command: str, args: List[Any], kwargs: Dict[str, Any]
+        self,
+        message: Message,
+        command: str,
+        args: List[Any],
+        kwargs: Dict[str, Any]
     ) -> None:
-        await self.logger._trigger_after_use_command(message, command, args, kwargs)
+        await self.logger._trigger_after_use_command(
+            message,
+            command,
+            args,
+            kwargs
+        )
         for handler in self._on_after_use_command_handlers:
             await handler(message, command, args, kwargs)
 
-    async def _trigger_missing_argument_error(self, message: Message, error: errors.MissingArgumentError) -> None:
+    async def _trigger_missing_argument_error(
+            self,
+            message: Message,
+            error: errors.MissingArgumentError
+    ) -> None:
         await self.logger._trigger_missing_argument_error(message, error)
         if not self._on_missing_argument_error_handlers:
             raise error
         for handler in self._on_missing_argument_error_handlers:
             await handler(message, error)
 
-    async def _trigger_argument_type_error(self, message: Message, error: errors.ArgumentTypeError) -> None:
+    async def _trigger_argument_type_error(
+            self,
+            message: Message,
+            error: errors.ArgumentTypeError
+    ) -> None:
         await self.logger._trigger_argument_type_error(message, error)
         if not self._on_argument_type_error_handlers:
             raise error
         for handler in self._on_argument_type_error_handlers:
             await handler(message, error)
 
-    async def _trigger_command_error(self, message: Message, error: errors.CommandError) -> None:
+    async def _trigger_command_error(
+            self,
+            message: Message,
+            error: errors.CommandError
+    ) -> None:
         await self.logger._trigger_command_error(message, error)
         for handler in self._on_command_error_handlers:
             await handler(message, error)
 
-    async def _trigger_command_permission_error(self, message: Message, error: errors.CommandPermissionError) -> None:
+    async def _trigger_command_permission_error(
+            self,
+            message: Message,
+            error: errors.CommandPermissionError
+    ) -> None:
         await self.logger._trigger_permissions_error(message, error)
         if not self._on_command_permission_error_handlers:
             raise error
