@@ -1,4 +1,4 @@
-name: Python Package
+name: Style and security lint
 
 on:
     workflow_dispatch:
