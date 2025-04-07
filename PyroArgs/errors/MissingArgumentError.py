@@ -15,7 +15,8 @@ class MissingArgumentError(ArgumentsError):
         missing_arg_position: int
     ):
         full_message = (
-            f'MissingArgumentError: Missing required argument "{missing_arg_name}" at position {missing_arg_position}.'
+            ('MissingArgumentError: Missing required argument'
+             f' "{missing_arg_name}" at position {missing_arg_position}.')
         )
 
         super().__init__(name, message_object, parsed_args,

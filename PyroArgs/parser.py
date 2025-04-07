@@ -1,7 +1,8 @@
-from typing import Dict, Any, List, Callable, Union, Tuple
-from . import errors
 import inspect
 import shlex
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+from . import errors
 
 
 def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str]) -> Tuple[str, str]:
@@ -47,8 +48,7 @@ def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str])
 
 
 def parse_command(
-    func: Callable, command: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes'),
-    falses: Union[List[str], Tuple[str], str] = ('false', 'no')
+    func: Callable, args: str
 ) -> Any:
     """
     Executes the given function `func` with arguments parsed from the `command` string.
@@ -65,40 +65,15 @@ def parse_command(
     Raises:
         ValueError: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
     """
-    def get_bool(arg: str, trues: Union[List[str], Tuple[str], str] = ('true', 'yes'),
-                 falses: Union[List[str], Tuple[str], str] = ('false', 'no')) -> bool:
-        """
-        Converts a string argument to a boolean.
-
-        Args:
-            arg (str): The argument to be converted.
-            trues (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as True.
-            falses (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as False.
-
-        Returns:
-            bool: The converted boolean value.
-
-        Raises:
-            ValueError: If the argument is not in the trues or falses lists.
-        """
-        if isinstance(trues, str):
-            trues = [trues]
-        if isinstance(falses, str):
-            falses = [falses]
-        if arg.lower() in trues:
-            return True
-        if arg.lower() in falses:
-            return False
-        raise ValueError(
-            f'Failed to cast argument "{arg}" to bool.')
 
     signature: inspect.Signature = inspect.signature(func)
-    lexer: shlex.shlex = shlex.shlex(command.strip(), posix=True)
+    lexer: shlex.shlex = shlex.shlex(args.strip(), posix=True)
     lexer.whitespace_split = True
     lexer.escapedquotes = '"'
     lexer.quotes = '"'
-    lexer.whitespace = ' '
-    args: List[str] = list(lexer)
+    lexer.whitespace = ' \n'
+    lexer.commenters = ''
+    args_list: List[str] = list(lexer)
 
     args_counter: int = 0
     result_args: List[Any] = []
@@ -120,7 +95,7 @@ def parse_command(
         if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD):
             default_used: bool = False
             try:
-                arg: str = args[args_counter]
+                arg: str = args_list[args_counter]
             except IndexError:
                 if param.default != param.empty:
                     default_used = True
@@ -132,15 +107,12 @@ def parse_command(
                         message_object=None,
                         missing_arg_name=name,
                         missing_arg_position=args_counter+1,
-                        parsed_args=args,
+                        parsed_args=args_list,
                         parsed_kwargs=result_kwargs
                     )
 
             if not default_used:
-                if param.annotation == bool:
-                    arg = get_bool(arg, trues, falses)
-
-                elif param.annotation != inspect._empty:
+                if param.annotation != inspect._empty:
                     try:
                         if param.annotation != Any:
                             arg = param.annotation(arg)
@@ -148,12 +120,12 @@ def parse_command(
                         raise errors.ArgumentTypeError(
                             name=name,
                             message_object=None,
-                            parsed_args=args,
+                            parsed_args=args_list,
                             parsed_kwargs=result_kwargs,
                             errored_arg_name=name,
                             errored_arg_position=args_counter+1,
                             required_type=param.annotation
-                        )
+                        ) from None
                 result_args.append(arg)
 
         elif param.kind == param.KEYWORD_ONLY:
@@ -163,13 +135,24 @@ def parse_command(
                 )
             is_keyword_only_used = True
 
-            arg: str = ' '.join(args[args_counter:])
+            arg = ''
+            if args_counter < len(args_list):
+                arg: str = (
+                    args.split(args_list[args_counter-1], 1)[1]
+                    if args_counter > 0
+                    else args
+                )
+            elif args_counter > 0:
+                try:
+                    parts = args.split(args_list[args_counter - 1], 1)
+                    if len(parts) > 1:
+                        arg = parts[1].strip()
+                except (IndexError, ValueError):
+                    pass
+
             if not arg:
                 if param.default != param.empty:
                     arg = param.default
-
-            if param.annotation == bool:
-                arg = get_bool(arg, trues, falses)
 
             elif param.annotation != inspect._empty:
                 try:
@@ -182,29 +165,35 @@ def parse_command(
                     raise errors.ArgumentTypeError(
                         name=name,
                         message_object=None,
-                        parsed_args=args,
+                        parsed_args=args_list,
                         parsed_kwargs=result_kwargs,
                         errored_arg_name=name,
                         errored_arg_position=args_counter+1,
                         required_type=param.annotation
-                    )
-            result_kwargs[name] = arg
+                    ) from None
+            result_kwargs[name] = arg.strip()
 
         args_counter += 1
 
-    # return func(*result_args, **result_kwargs)
     return result_args, result_kwargs
 
 
 if __name__ == '__main__':
-    def func(a: str, b: bool = '52') -> None:
-        print(a, b, sep='\n')
-        print(type(a), type(b), sep='\n')
-        return 'RESULT_AR'
+    def func(message: ..., user: str, ban_time: int = 120, *, reason: str):
+        print('---')
+        print(user)
+        print('---')
+        print(ban_time)
+        print('---')
+        print(reason)
+        print('---')
 
-    text = '/test 111 true'
-    cmd, args = get_command_and_args(text, ['/', 'v?'])
+        print(type(user))
+        print(type(ban_time))
+        print(type(reason))
 
-    if cmd == 'test':
-        result_args, result_kwargs = parse_command(func, args)
-        print(func(*result_args, **result_kwargs))
+    args = 'Notch -1 X-Ray'
+
+    result_args, result_kwargs = parse_command(func, args)
+    print(result_args, result_kwargs)
+    func(..., *result_args, **result_kwargs)

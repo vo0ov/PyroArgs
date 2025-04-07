@@ -1,10 +1,9 @@
 # setup.py
-from setuptools import setup, find_packages
-
+from setuptools import find_packages, setup
 
 setup(
     name='PyroArgs',
-    version='1.3',  # ВЕРСИЯ
+    version='1.4',  # ВЕРСИЯ
     description='Удобная обработка аргументов команд для Pyrogram',
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
@@ -14,8 +13,11 @@ setup(
     packages=find_packages(),
     install_requires=[
         'pyrogram>=2.0.0',
-        'TgCrypto>=1.2.2',
     ],
+    extras_require={
+        'all': ['TgCrypto>=1.2.2'],
+        'crypto': ['TgCrypto>=1.2.2'],
+    },
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

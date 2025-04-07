@@ -1,8 +1,8 @@
 # PyroArgs/utils/DataHolder.py
-from ..pyroargs import PyroArgs
-from pyrogram import Client
 from typing import Any
 
-PyroArgsObj: PyroArgs = None
+from pyrogram import Client
+
+PyroArgsObj = None
 ClientObj: Client = None
 CustomData: Any = None
