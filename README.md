@@ -30,7 +30,7 @@ pip install PyroArgs
 - Установка `PyroArgs` с использованием через `git` (Для продвинутых пользователей):
 
 ```bash
-git clone https://github.com/vo0ov/PyroArgs.git
+git clone https://github.com/vo0ov/PYPI-PyroArgs.git
 cd PyroArgs
 pip install .
 ```
