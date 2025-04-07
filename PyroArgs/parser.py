@@ -1,20 +1,11 @@
-from typing import (
-    Dict,
-    Any,
-    List,
-    Callable,
-    Union,
-    Tuple
-)
 import inspect
 import shlex
+from typing import Any, Callable, Dict, List, Tuple, Union
+
 from . import errors
 
 
-def get_command_and_args(
-        text: str,
-        prefixes: Union[List[str], Tuple[str], str]
-) -> Tuple[str, str]:
+def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str]) -> Tuple[str, str]:
     """
     Gets command and arguments from a string.
 
@@ -29,15 +20,18 @@ def get_command_and_args(
     Finally, it takes the rest of the string as the arguments, strips it of any
     whitespaces and returns a tuple with the command and arguments.
 
-    ## Parameters
-        text (``str``):
-            The string to parse.
-        prefixes : (``List[str]`` or ``Tuple[str]`` or ``str``):
-            The ``list/tuple`` or single prefix to check against.
+    Parameters
+    ----------
+    text : str
+        The string to parse.
+    prefixes : List[str] or Tuple[str] or str
+        The list/tuple or single prefix to check against.
 
-    ## Returns
-        ``Tuple[str, str]``: The command and arguments as a tuple.
-    """  # noqa
+    Returns
+    -------
+    Tuple[str, str]
+        The command and arguments as a tuple.
+    """
     text = text.strip()
 
     if not text.startswith(tuple(prefixes)):
@@ -54,74 +48,30 @@ def get_command_and_args(
 
 
 def parse_command(
-    func: Callable,
-    args: str,
-    trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),
-    falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')
+    func: Callable, args: str
 ) -> Any:
     """
     Executes the given function `func` with arguments parsed from the `command` string.
 
-    ## Parameters
-        func (``Callable``):
-            The function to be executed.
+    Args:
+        func (Callable): The function to be executed.
+        command (str): The command string containing arguments for the function.
+        trues (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as True.
+        falses (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as False.
 
-        command (``str``):
-            The command string containing arguments for the function.
+    Returns:
+        Any: The result of executing `func` with the parsed arguments.
 
-        trues (``Union[List[str], Tuple[str], str]``, *optional*):
-            A list or tuple of strings to interpret as True.
-
-        falses (``Union[List[str], Tuple[str], str]``, *optional*):
-            A list or tuple of strings to interpret as False.
-
-    ## Returns
-        ``Any``: The result of executing `func` with the parsed arguments.
-
-    ## Raises
-        ``ValueError``: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
-    """  # noqa
-    def get_bool(
-            arg: str,
-            trues: Union[List[str], Tuple[str], str] = ('true', 'yes', 'y', 't'),  # noqa
-            falses: Union[List[str], Tuple[str], str] = ('false', 'no', 'n', 'f')  # noqa
-    ) -> bool:
-        """
-        Converts a string argument to a boolean.
-
-        ## Parameters
-            arg (``str``):
-                The argument to be converted.
-
-            trues (``Union[List[str], Tuple[str], str]``, *optional*):
-                A list or tuple of strings to interpret as True.
-
-            falses (``Union[List[str], Tuple[str], str]``, *optional*):
-                A list or tuple of strings to interpret as False.
-
-        ## Returns
-            ``bool``: The converted boolean value.
-
-        ## Raises
-            ``ValueError``: If the argument is not in the trues or falses lists.
-        """  # noqa
-        if isinstance(trues, str):
-            trues = [trues]
-        if isinstance(falses, str):
-            falses = [falses]
-        if arg.lower() in trues:
-            return True
-        if arg.lower() in falses:
-            return False
-        raise ValueError(
-            f'Failed to cast argument "{arg}" to bool.')
+    Raises:
+        ValueError: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
+    """
 
     signature: inspect.Signature = inspect.signature(func)
     lexer: shlex.shlex = shlex.shlex(args.strip(), posix=True)
     lexer.whitespace_split = True
-    lexer.escapedquotes = ''
-    lexer.quotes = ' '
-    lexer.whitespace = ' '
+    lexer.escapedquotes = '"'
+    lexer.quotes = '"'
+    lexer.whitespace = ' \n'
     lexer.commenters = ''
     args_list: List[str] = list(lexer)
 
@@ -157,50 +107,52 @@ def parse_command(
                         message_object=None,
                         missing_arg_name=name,
                         missing_arg_position=args_counter+1,
-                        parsed_args=args,
+                        parsed_args=args_list,
                         parsed_kwargs=result_kwargs
                     )
 
             if not default_used:
-                if param.annotation == bool:
-                    arg = get_bool(arg, trues, falses)
-
-                elif param.annotation != inspect._empty:
+                if param.annotation != inspect._empty:
                     try:
                         if param.annotation != Any:
                             arg = param.annotation(arg)
                     except ValueError:
-                        pass
                         raise errors.ArgumentTypeError(
                             name=name,
                             message_object=None,
-                            parsed_args=args,
+                            parsed_args=args_list,
                             parsed_kwargs=result_kwargs,
                             errored_arg_name=name,
                             errored_arg_position=args_counter+1,
                             required_type=param.annotation
-                        )
+                        ) from None
                 result_args.append(arg)
 
         elif param.kind == param.KEYWORD_ONLY:
             if is_keyword_only_used:
                 raise SyntaxError(
-                    'There should not be more than one keyword argument in the function call.'  # noqa
+                    'There should not be more than one keyword argument in the function call.'
                 )
             is_keyword_only_used = True
 
-            arg: str = (
-                args.split(args_list[args_counter-1], 1)[1]
-                if args_counter > 0
-                else args
-            )
+            arg = ''
+            if args_counter < len(args_list):
+                arg: str = (
+                    args.split(args_list[args_counter-1], 1)[1]
+                    if args_counter > 0
+                    else args
+                )
+            elif args_counter > 0:
+                try:
+                    parts = args.split(args_list[args_counter - 1], 1)
+                    if len(parts) > 1:
+                        arg = parts[1].strip()
+                except (IndexError, ValueError):
+                    pass
 
             if not arg:
                 if param.default != param.empty:
                     arg = param.default
-
-            if param.annotation == bool:
-                arg = get_bool(arg, trues, falses)
 
             elif param.annotation != inspect._empty:
                 try:
@@ -210,33 +162,38 @@ def parse_command(
                         else:
                             arg = param.annotation(arg)
                 except ValueError:
-                    pass
                     raise errors.ArgumentTypeError(
                         name=name,
                         message_object=None,
-                        parsed_args=args,
+                        parsed_args=args_list,
                         parsed_kwargs=result_kwargs,
                         errored_arg_name=name,
                         errored_arg_position=args_counter+1,
                         required_type=param.annotation
-                    )
-            result_kwargs[name] = arg
+                    ) from None
+            result_kwargs[name] = arg.strip()
 
         args_counter += 1
 
-    # return func(*result_args, **result_kwargs)
     return result_args, result_kwargs
 
 
 if __name__ == '__main__':
-    def func(a: str, b: bool = '52') -> None:
-        print(a, b, sep='\n')
-        print(type(a), type(b), sep='\n')
-        return 'RESULT_AR'
+    def func(message: ..., user: str, ban_time: int = 120, *, reason: str):
+        print('---')
+        print(user)
+        print('---')
+        print(ban_time)
+        print('---')
+        print(reason)
+        print('---')
 
-    text = '/test 111 true'
-    cmd, args = get_command_and_args(text, ['/', 'v?'])
+        print(type(user))
+        print(type(ban_time))
+        print(type(reason))
 
-    if cmd == 'test':
-        result_args, result_kwargs = parse_command(func, args)
-        print(func(*result_args, **result_kwargs))
+    args = 'Notch -1 X-Ray'
+
+    result_args, result_kwargs = parse_command(func, args)
+    print(result_args, result_kwargs)
+    func(..., *result_args, **result_kwargs)

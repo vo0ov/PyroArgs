@@ -1,17 +1,17 @@
 # PyroArgs/pyroargs.py
-from typing import Callable, List, Any, TypeVar, Tuple, Dict, Optional, Union
-from pyrogram.filters import Filter, create, command
-from pyrogram.handlers import MessageHandler
-from pyrogram import Client
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
+from pyrogram import Client
+from pyrogram.filters import Filter, command, create
+from pyrogram.handlers import MessageHandler
+
+from . import errors
 from .parser import get_command_and_args, parse_command
-from .types.commandRegistry import CommandRegistry
+from .types import Message
 from .types.command import Command
+from .types.commandRegistry import CommandRegistry
 from .types.events import Events
 from .utils import DataHolder
-from .types import Message
-from . import errors
-
 
 F = TypeVar('F', bound=Callable[..., Any])
 
@@ -29,7 +29,7 @@ class PyroArgs:
         self.events: Events = Events(log_file)
         self.registry: CommandRegistry = CommandRegistry()
         self.permission_checker_func: Callable[[
-            int, Message], bool] = None
+            Message, int], bool] = None
 
         # Сохраняем объекты для доступа в плагинах
         DataHolder.ClientObj = self.bot
@@ -145,11 +145,16 @@ class PyroArgs:
             await self.events._trigger_argument_type_error(message, e)
         except Exception as e:
             print(
-                '!!! PYROARGS ERROR !!!',
-                'PLEASE REPORT THIS ERROR:',
-                'https://github.com/vo0ov/PYPI-PyroArgs/issues',
-                '!!! PYROARGS ERROR !!!',
-                sep='\n'
+                (
+                    '\n'
+                    '!!!!!!!!!      PYROARGS CRITICAL ERROR      !!!!!!!!!\n'
+                    '!!                                                 !!\n'
+                    '!!            PLEASE REPORT THIS ERROR:            !!\n'
+                    '!!  https://github.com/vo0ov/PYPI-PyroArgs/issues  !!\n'
+                    '!!                                                 !!\n'
+                    '!!!!!!!!!      PYROARGS CRITICAL ERROR      !!!!!!!!!\n'
+                    '\n'
+                )
             )
             raise SystemError(e)
         return None

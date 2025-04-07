@@ -1,9 +1,9 @@
 # PyroArgs/types/logger.py
 import logging
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from . import Message
 from .. import errors
+from . import Message
 
 
 class Logger:
@@ -157,7 +157,7 @@ class Logger:
         if self.command_error:
             self.logger.info(self.command_error_message.format(
                 user=self.__get_username(message),
-                command=error.name,
+                command=error.command,
                 args=error.parsed_args,
                 kwargs=error.parsed_kwargs,
                 error=error.original_error
@@ -171,6 +171,6 @@ class Logger:
         if self.permissions_error:
             self.logger.info(self.permissions_error_message.format(
                 user=self.__get_username(message),
-                command=error.name,
+                command=error.command,
                 level=error.permission_level
             ))

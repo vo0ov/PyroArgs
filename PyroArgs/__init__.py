@@ -1,7 +1,7 @@
 # PyroArgs/__init__.py
-from . import types, errors
-from .utils import DataHolder
+from . import errors, types
 from .pyroargs import PyroArgs
+from .utils import DataHolder
 
 __all__ = ['PyroArgs', 'types', 'errors', 'DataHolder']
-__version__ = '1.3'  # ВЕРСИЯ
+__version__ = '1.4'  # ВЕРСИЯ

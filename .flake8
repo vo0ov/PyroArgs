@@ -1,0 +1,9 @@
+[flake8]
+; * Основные настройки * ;
+max-line-length = 127
+
+; * Кавычки * ;
+inline-quotes = single
+docstring-quotes = double
+multiline-quotes = single
+avoid-escape = True
