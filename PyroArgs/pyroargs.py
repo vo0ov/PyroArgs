@@ -4,14 +4,13 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 from pyrogram import Client
 from pyrogram.filters import Filter, command, create
 from pyrogram.handlers import MessageHandler
+from pyrogram.types import Message
 
 from . import errors
 from .parser import get_command_and_args, parse_command
-from .types import Message
 from .types.command import Command
 from .types.commandRegistry import CommandRegistry
 from .types.events import Events
-from .utils import DataHolder
 
 F = TypeVar('F', bound=Callable[..., Any])
 
@@ -21,28 +20,14 @@ class PyroArgs:
             self,
             bot: Client,
             prefixes: Union[List[str], Tuple[str], str] = ['/'],
-            log_file: str = None
     ) -> None:
         # Переменные класса
         self.bot: Client = bot
         self.prefixes: Union[List[str], Tuple[str], str] = prefixes
-        self.events: Events = Events(log_file)
+        self.events: Events = Events()
         self.registry: CommandRegistry = CommandRegistry()
         self.permission_checker_func: Callable[[
             Message, int], bool] = None
-
-        # Сохраняем объекты для доступа в плагинах
-        DataHolder.ClientObj = self.bot
-        DataHolder.PyroArgsObj = self
-
-        # Логи
-        self.setup_logs = self.events.logger.setup_logs
-        self.before_use_command_message = self.events.logger.before_use_command_message  # noqa
-        self.after_use_command_message = self.events.logger.after_use_command_message  # noqa
-        self.missing_argument_error_message = self.events.logger.missing_argument_error_message  # noqa
-        self.argument_type_error_message = self.events.logger.argument_type_error_message  # noqa
-        self.command_error_message = self.events.logger.command_error_message  # noqa
-        self.permissions_error_message = self.events.logger.permissions_error_message  # noqa
 
     def command(
         self,
@@ -52,7 +37,6 @@ class PyroArgs:
         example: str = None,
         permissions_level: int = 0,
         aliases: List[str] = None,
-        command_meta_data: Any = None,
         category: str = 'General',
         filters: Filter = create(lambda *_: True),
         group: int = 0
@@ -65,8 +49,6 @@ class PyroArgs:
 
             # ** Обработчик команды **
             async def handler(client: Client, message: Message) -> None:
-                message.command_meta_data = command_meta_data
-
                 # ** Парсинг команды **
                 cmd_text = message.text or message.caption
                 cmd, args = get_command_and_args(cmd_text, self.prefixes)
@@ -105,7 +87,6 @@ class PyroArgs:
                 example,
                 permissions_level,
                 aliases,
-                command_meta_data,
                 category
             )
             return func
@@ -207,17 +188,15 @@ class PyroArgs:
             example,
             permissions_level,
             aliases,
-            command_meta_data,
             category
-    ):
+    ) -> None:
         cmd = Command(
             command_name,
             description,
             usage,
             example,
             permissions_level,
-            aliases,
-            command_meta_data
+            aliases
         )
         self.registry.add_command(cmd, category or 'Other')
         self.bot.add_handler(

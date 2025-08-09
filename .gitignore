@@ -288,3 +288,5 @@ pyrightconfig.json
 UPDATE HELP.md
 *.session*
 *test*.py
+modules/
+sessions/

@@ -43,7 +43,7 @@ def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str])
             cmd = cmd[len(prefix):]
             break
 
-    args = text[len(prefix)+len(cmd):].strip()
+    args = text[len(prefix) + len(cmd):].strip()
     return cmd, args
 
 
@@ -106,7 +106,7 @@ def parse_command(
                         name=name,
                         message_object=None,
                         missing_arg_name=name,
-                        missing_arg_position=args_counter+1,
+                        missing_arg_position=args_counter + 1,
                         parsed_args=args_list,
                         parsed_kwargs=result_kwargs
                     )
@@ -123,7 +123,7 @@ def parse_command(
                             parsed_args=args_list,
                             parsed_kwargs=result_kwargs,
                             errored_arg_name=name,
-                            errored_arg_position=args_counter+1,
+                            errored_arg_position=args_counter + 1,
                             required_type=param.annotation
                         ) from None
                 result_args.append(arg)
@@ -138,7 +138,7 @@ def parse_command(
             arg = ''
             if args_counter < len(args_list):
                 arg: str = (
-                    args.split(args_list[args_counter-1], 1)[1]
+                    args.split(args_list[args_counter - 1], 1)[1]
                     if args_counter > 0
                     else args
                 )
@@ -168,7 +168,7 @@ def parse_command(
                         parsed_args=args_list,
                         parsed_kwargs=result_kwargs,
                         errored_arg_name=name,
-                        errored_arg_position=args_counter+1,
+                        errored_arg_position=args_counter + 1,
                         required_type=param.annotation
                     ) from None
             result_kwargs[name] = arg.strip()

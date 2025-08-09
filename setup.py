@@ -1,9 +1,11 @@
 # setup.py
 from setuptools import find_packages, setup
 
+# TODO: Переписать пример. Там тип message не тот
+# TODO: Убрать List Dict и тд тк они не нужны в Python 3.9+
 setup(
     name='PyroArgs',
-    version='1.4',  # ВЕРСИЯ
+    version='1.5',  # ВЕРСИЯ
     description='Удобная обработка аргументов команд для Pyrogram',
     long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',

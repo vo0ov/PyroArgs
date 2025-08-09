@@ -4,10 +4,10 @@ from .command import Command
 
 
 class CommandRegistry:
-    def __init__(self):
+    def __init__(self) -> None:
         self.commands: Dict[str, List[Command]] = {}
 
-    def add_command(self, command: Command, category: str):
+    def add_command(self, command: Command, category: str) -> None:
         """Добавляет новую команду в указанную категорию."""
         if category not in self.commands:
             self.commands[category] = []

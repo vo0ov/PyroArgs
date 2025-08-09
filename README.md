@@ -1,4 +1,5 @@
 <!-- markdownlint-disable-next-line MD041 -->
+
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/PyroArgs?label=%D0%A1%D0%BA%D0%B0%D1%87%D0%B8%D0%B2%D0%B0%D0%BD%D0%B8%D0%B9) ![PyPI - License](https://img.shields.io/pypi/l/PyroArgs?label=%D0%9B%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F)
 
 # [PyroArgs на PyPi](https://pypi.org/project/PyroArgs/)
@@ -10,7 +11,6 @@
 - **Удобный декоратор для создания команд** с поддержкой позиционных и именованных аргументов прямо как в библиотеке `Discord.py`
 - **Обработка ошибок аргументов и команд** с помощью специальных исключений-ивентов
 - **Система событий** для регистрации обработчиков ошибок и событий
-- **Поддержка `command_meta_data`** для передачи дополнительных данных в команды
 - **Совместимость с пользовательскими фильтрами и группами обработчиков** из Pyrogram
 
 ## Установка
@@ -30,7 +30,7 @@ pip install PyroArgs
 - Установка `PyroArgs` с использованием через `git` (Для продвинутых пользователей):
 
 ```bash
-git clone https://github.com/vo0ov/PYPI-PyroArgs.git
+git clone https://github.com/vo0ov/PyroArgs.git
 cd PyroArgs
 pip install .
 ```
@@ -41,7 +41,7 @@ pip install .
 
 ```python
 from pyrogram import Client
-from PyroArgs import PyroArgs, types, errors
+from pyroargs import PyroArgs, types, errors
 ```
 
 ### Инициализация клиента и `PyroArgs`
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
 ```python
 from pyrogram import Client
-from PyroArgs import PyroArgs, types, errors
+from pyroargs import PyroArgs, types, errors
 
 # Замените 12345 и 'abcdef' на ваши api_id и api_hash в этой строке, НО лучше использовать переменные окружения
 bot = Client('Bot', api_id=12345, api_hash='abcdef')
@@ -101,7 +101,7 @@ if __name__ == '__main__':
 
 ## Пример использования большенства функций `PyroArgs`
 
-В папке [`examples`](examples) присутствуют полный пример использования `PyroArgs`:
+В папке [`examples`](examples) в GitHub репозитории проекта присутствует полный пример использования `PyroArgs`:
 
 - [`full_example_bot.py`](examples/full_example_bot.py) - полный пример использования `PyroArgs`
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
 ```License
 MIT License
-Copyright (c) 2024, vo0ov
+Copyright (c) 2025, vo0ov
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

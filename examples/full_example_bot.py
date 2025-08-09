@@ -3,14 +3,14 @@ from os import environ
 from dotenv import load_dotenv
 from pyrogram import Client
 
-import PyroArgs
+import pyroargs
 
 # Загрузка переменных окружения
 load_dotenv()
 
 #####################
 #                   #
-#     НАСТРОйКИ     #
+#     НАСТРОЙКИ     #
 #                   #
 #####################
 
@@ -21,25 +21,15 @@ app = Client(
     environ['AUTH_API_HASH'],
     bot_token=environ['BOT_TOKEN']
 )
-PyAr = PyroArgs.PyroArgs(app, ('/'))
-
-# Включение логирования в консоль
-# PyAr.setup_logs(
-#     before_use_command=True,
-#     after_use_command=True,
-#     missing_argument_error=True,
-#     argument_type_error=True,
-#     command_error=True,
-#     permissions_error=True
-# )
+PyAr = pyroargs.PyroArgs(app, ('/'))
 
 
 # Специальная функция для проверки права пользователя
 @PyAr.permissions_checker
 async def check(
-    message: PyroArgs.types.Message,
+    message: pyroargs.types.Message,
     required_permission: int
-):
+) -> bool:
     # * У вас может быть своя функция для проверки прав, это лишь пример * #
 
     # Списки пользователей с правами
@@ -75,7 +65,7 @@ async def on_before_use_command(
     command: str,
     args: list,
     kwargs: dict
-):
+) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
     print(f'⏱️ Команда "{command}" начала выполнение...')
@@ -88,7 +78,7 @@ async def on_after_use_command(
     command: str,
     args: list,
     kwargs: dict
-):
+) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
     print(f'✅ Команда "{command}" завершила выполнение!')
@@ -97,9 +87,9 @@ async def on_after_use_command(
 # Вызывается при недостаточном количестве аргументов
 @PyAr.events.on_missing_argument_error
 async def on_missing_argument_error(
-    message: PyroArgs.types.Message,
-    error: PyroArgs.errors.MissingArgumentError
-):
+    message: pyroargs.types.Message,
+    error: pyroargs.errors.MissingArgumentError
+) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
     await message.reply(f'❌ Вы пропустили аргумент: `{error.name}`!', quote=True)
@@ -108,9 +98,9 @@ async def on_missing_argument_error(
 # Вызывается при неверном типе аргумента
 @PyAr.events.on_argument_type_error
 async def on_argument_type_error(
-    message: PyroArgs.types.Message,
-    error: PyroArgs.errors.ArgumentTypeError
-):
+    message: pyroargs.types.Message,
+    error: pyroargs.errors.ArgumentTypeError
+) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
     await message.reply(f'❌ Неверный тип аргумента: `{error.name}`!', quote=True)
@@ -119,9 +109,9 @@ async def on_argument_type_error(
 # Вызывается при возникновении ошибки в команде
 @PyAr.events.on_command_error
 async def on_command_error(
-    message: PyroArgs.types.Message,
-    error: PyroArgs.errors.CommandError
-):
+    message: pyroargs.types.Message,
+    error: pyroargs.errors.CommandError
+) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
     await message.reply(f'❌ Произошла ошибка в команде: `{error.command}`!', quote=True)
@@ -130,9 +120,9 @@ async def on_command_error(
 # Вызывается при недостаточном количестве прав у пользователя
 @PyAr.events.on_command_permission_error
 async def on_command_permission_error(
-    message: PyroArgs.types.Message,
-    error: PyroArgs.errors.CommandPermissionError
-):
+    message: pyroargs.types.Message,
+    error: pyroargs.errors.CommandPermissionError
+) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
     await message.reply(f'❌ Недостаточно прав для выполнения команды: `{error.command}`!', quote=True)
@@ -151,7 +141,7 @@ async def on_command_permission_error(
     usage='/help',
     example='/help',
 )
-async def help(message: PyroArgs.types.Message):
+async def help(message: pyroargs.types.Message) -> None:
     # Заголовок
     help_text = 'Список доступных команд:\n'
 
@@ -179,11 +169,12 @@ async def help(message: PyroArgs.types.Message):
     usage='/echo [текст]',
     example='/echo Привет!',
 )
-async def echo(message: PyroArgs.types.Message, *, text: str):
+async def echo(message: pyroargs.types.Message, *, text: str) -> None:
     # Проверяем текст на пустоту
     if not text:
         # Если текст пустой, то отправляем сообщение об ошибке
-        return await message.reply('❌ Нельзя отправить пустой текст!', quote=True)
+        await message.reply('❌ Нельзя отправить пустой текст!', quote=True)
+        return
 
     # Отправляем текст
     await message.reply(text)
@@ -194,7 +185,7 @@ async def echo(message: PyroArgs.types.Message, *, text: str):
     usage='/info',
     example='/info',
 )
-async def info(message: PyroArgs.types.Message):
+async def info(message: pyroargs.types.Message) -> None:
     # Отправляем информацию о пользователе
     await message.reply(
         f'👤 Имя: `{message.from_user.first_name}`\n'
@@ -210,12 +201,12 @@ async def info(message: PyroArgs.types.Message):
     permissions_level=1
 )
 async def ban(
-    message: PyroArgs.types.Message,
+    message: pyroargs.types.Message,
     user: str,
     ban_time: int = 120,
     *,
     reason: str
-):
+) -> None:
     # Фейковый бан
     await message.reply(f'Пользователь `{user}` был забанен на `{ban_time}` секунд по причине: `{reason}`.')
 
@@ -226,7 +217,7 @@ async def ban(
     usage='/error',
     example='/error',
 )
-async def error(message: PyroArgs.types.Message):
+async def error(message: pyroargs.types.Message) -> None:
     print(1 / 0)  # ВНИМАНИЕ! Это вызовет исключение "ZeroDivisionError" для теста
 
 

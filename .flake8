@@ -1,6 +1,7 @@
 [flake8]
 ; * Основные настройки * ;
 max-line-length = 127
+ignore = EKW,ANN
 
 ; * Кавычки * ;
 inline-quotes = single
