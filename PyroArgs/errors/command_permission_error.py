@@ -1,5 +1,4 @@
-# PyroArgs/errors/PermissionsError.py
-from ..types import Message
+from pyrogram.types import Message
 
 
 class CommandPermissionError(Exception):
@@ -8,7 +7,7 @@ class CommandPermissionError(Exception):
         command: str,
         message: Message,
         permission_level: int
-    ):
+    ) -> None:
         full_message = ('Permissions error: User does not '
                         f'have permission to use command "{command}".')
         super().__init__(full_message)

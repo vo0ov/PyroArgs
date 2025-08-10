@@ -1,6 +1,6 @@
-# PyroArgs/errors/CommandError.py
-from typing import List, Dict, Any
-from ..types import Message
+from typing import Any, Dict, List
+
+from pyrogram.types import Message
 
 
 class CommandError(Exception):
@@ -12,7 +12,7 @@ class CommandError(Exception):
         parsed_kwargs: Dict[str, Any],
         error_message: str = None,
         original_error: Exception = None
-    ):
+    ) -> None:
         full_message = f'Command error: Error in command "{command}".'
         super().__init__(full_message)
         self.command = command

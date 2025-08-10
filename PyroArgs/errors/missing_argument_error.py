@@ -1,7 +1,8 @@
-# PyroArgs/errors/MissingArgumentError.py
-from .ArgumentsError import ArgumentsError
-from ..types import Message
-from typing import List, Any, Dict
+from typing import Any, Dict, List
+
+from pyrogram.types import Message
+
+from .arguments_error import ArgumentsError
 
 
 class MissingArgumentError(ArgumentsError):
@@ -13,7 +14,7 @@ class MissingArgumentError(ArgumentsError):
         parsed_kwargs: Dict[str, Any],
         missing_arg_name: str,
         missing_arg_position: int
-    ):
+    ) -> None:
         full_message = (
             ('MissingArgumentError: Missing required argument'
              f' "{missing_arg_name}" at position {missing_arg_position}.')

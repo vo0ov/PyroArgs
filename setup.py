@@ -3,6 +3,7 @@ from setuptools import find_packages, setup
 
 # TODO: Переписать пример. Там тип message не тот
 # TODO: Убрать List Dict и тд тк они не нужны в Python 3.9+
+# TODO: Пофиксить тесты
 setup(
     name='PyroArgs',
     version='1.5',  # ВЕРСИЯ

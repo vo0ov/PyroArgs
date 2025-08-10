@@ -1,6 +1,6 @@
-# PyroArgs/errors/ArgumentsError.py
-from typing import List, Any, Dict
-from ..types import Message
+from typing import Any, Dict, List
+
+from pyrogram.types import Message
 
 
 class ArgumentsError(Exception):
@@ -10,7 +10,7 @@ class ArgumentsError(Exception):
         parsed_args: List[Any],
         parsed_kwargs: Dict[str, Any],
         error_text: str = ''
-    ):
+    ) -> None:
         super().__init__(error_text)
         self.name = name
         self.message_object = message_object

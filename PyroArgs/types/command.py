@@ -20,4 +20,5 @@ class Command:
 
     def has_permission(self, user_level: int) -> bool:
         """Проверяет, имеет ли пользователь необходимый уровень доступа."""
+
         return user_level >= self.permissions

@@ -1,185 +1,190 @@
+import enum
 import inspect
 import shlex
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import (Any, Callable, Dict, List, Sequence, Tuple, Union,
+                    get_args, get_origin)
 
-from . import errors
+try:
+    import errors
+except ImportError:
+    from . import errors
 
 
-def get_command_and_args(text: str, prefixes: Union[List[str], Tuple[str], str]) -> Tuple[str, str]:
-    """
-    Gets command and arguments from a string.
+def get_command_and_args(text: str, prefixes: Union[Sequence[str], str]) -> Tuple[str, str]:
+    text = (text or '').lstrip()
 
-    The function takes a string and a list/tuple of prefixes as parameters.
-    It first strips the string of any whitespaces, then checks if the string
-    starts with any of the prefixes. If not, it raises a NameError.
+    # Нормализация префиксов
+    if isinstance(prefixes, str):
+        pref_tuple: Tuple[str, ...] = (prefixes,)
+    else:
+        pref_tuple = tuple(prefixes)
+    if not pref_tuple:
+        raise ValueError('Prefixes list is empty.')
 
-    Then it splits the string by spaces and takes the first part as the command.
-    It goes through the list of prefixes and checks if the command starts with
-    any of them. If it does, it removes the prefix from the command.
-
-    Finally, it takes the rest of the string as the arguments, strips it of any
-    whitespaces and returns a tuple with the command and arguments.
-
-    Parameters
-    ----------
-    text : str
-        The string to parse.
-    prefixes : List[str] or Tuple[str] or str
-        The list/tuple or single prefix to check against.
-
-    Returns
-    -------
-    Tuple[str, str]
-        The command and arguments as a tuple.
-    """
-    text = text.strip()
-
-    if not text.startswith(tuple(prefixes)):
+    # Самый длинный матч
+    prefix = next((p for p in sorted(pref_tuple, key=len, reverse=True) if text.startswith(p)), None)
+    if prefix is None:
         raise NameError('Command does not start with prefix.')
 
-    cmd = text.split()[0]
-    for prefix in prefixes:
-        if cmd.startswith(prefix):
-            cmd = cmd[len(prefix):]
-            break
+    rest = text[len(prefix):].lstrip()
+    if not rest:
+        raise NameError('Command name is missing.')
 
-    args = text[len(prefix) + len(cmd):].strip()
+    # Команда - первое слово, аргументы - остаток
+    if ' ' in rest:
+        cmd, args = rest.split(' ', 1)
+        args = args.strip()
+    else:
+        cmd, args = rest, ''
+
     return cmd, args
 
 
-def parse_command(
-    func: Callable, args: str
-) -> Any:
-    """
-    Executes the given function `func` with arguments parsed from the `command` string.
+def _cast(value: str, annotation: Any) -> Any:
+    if annotation in (inspect._empty, Any):
+        return value
 
-    Args:
-        func (Callable): The function to be executed.
-        command (str): The command string containing arguments for the function.
-        trues (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as True.
-        falses (Union[List[str], Tuple[str], str], optional): A list or tuple of strings to interpret as False.
+    origin = get_origin(annotation)
+    type_arguments = get_args(annotation)
 
-    Returns:
-        Any: The result of executing `func` with the parsed arguments.
-
-    Raises:
-        ValueError: If a parameter is missing, casting fails, or multiple keyword-only arguments are used.
-    """
-
-    signature: inspect.Signature = inspect.signature(func)
-    lexer: shlex.shlex = shlex.shlex(args.strip(), posix=True)
-    lexer.whitespace_split = True
-    lexer.escapedquotes = '"'
-    lexer.quotes = '"'
-    lexer.whitespace = ' \n'
-    lexer.commenters = ''
-    args_list: List[str] = list(lexer)
-
-    args_counter: int = 0
-    result_args: List[Any] = []
-    result_kwargs: Dict[str, Any] = {}
-    is_keyword_only_used: bool = False
-
-    for param in signature.parameters.values():
-        if param.kind == param.VAR_POSITIONAL:
-            raise SyntaxError(
-                f'Positional var are not supported. Remove "*{param.name}".'
-            )
-        elif param.kind == param.VAR_KEYWORD:
-            raise SyntaxError(
-                f'Keyword var are not supported. Remove "**{param.name}".'
-            )
-
-    for name, param in list(signature.parameters.items())[1:]:
-        # HINT: print(name, param.kind, param.default, param.annotation)
-        if param.kind in (param.POSITIONAL_ONLY, param.POSITIONAL_OR_KEYWORD):
-            default_used: bool = False
+    # Optional/Union
+    if origin is Union:
+        last_exc = None
+        for type_argument in type_arguments:
+            if type_argument is type(None):
+                if value == '' or value.lower() in {'none', 'null'}:
+                    return None
+                continue
             try:
-                arg: str = args_list[args_counter]
-            except IndexError:
-                if param.default != param.empty:
-                    default_used = True
-                    arg = param.default
-                    result_args.append(arg)
-                else:
-                    raise errors.MissingArgumentError(
-                        name=name,
-                        message_object=None,
-                        missing_arg_name=name,
-                        missing_arg_position=args_counter + 1,
-                        parsed_args=args_list,
-                        parsed_kwargs=result_kwargs
-                    )
+                return _cast(value, type_argument)
+            except Exception as e:
+                last_exc = e
+        raise last_exc or ValueError(f'Cannot cast "{value}" to {annotation}')
 
-            if not default_used:
-                if param.annotation != inspect._empty:
-                    try:
-                        if param.annotation != Any:
-                            arg = param.annotation(arg)
-                    except ValueError:
-                        raise errors.ArgumentTypeError(
-                            name=name,
-                            message_object=None,
-                            parsed_args=args_list,
-                            parsed_kwargs=result_kwargs,
-                            errored_arg_name=name,
-                            errored_arg_position=args_counter + 1,
-                            required_type=param.annotation
-                        ) from None
-                result_args.append(arg)
+    # Enum
+    if inspect.isclass(annotation) and issubclass(annotation, enum.Enum):
+        for m in annotation:  # by name (case-insensitive) or by value
+            if m.name.lower() == value.lower() or str(m.value) == value:
+                return m
+        raise ValueError(f'Unknown enum value "{value}" for {annotation.__name__}')
 
-        elif param.kind == param.KEYWORD_ONLY:
-            if is_keyword_only_used:
-                raise SyntaxError(
-                    'There should not be more than one keyword argument in the function call.'
-                )
-            is_keyword_only_used = True
+    # bool
+    if annotation is bool:
+        v = value.strip().lower()
+        if v in {'1', 'true', 'yes', 'y', 'on', 'да', 'д'}:
+            return True
+        if v in {'0', 'false', 'no', 'n', 'off', 'нет', 'н'}:
+            return False
+        raise ValueError(f'Cannot cast "{value}" to bool')
 
-            arg = ''
-            if args_counter < len(args_list):
-                arg: str = (
-                    args.split(args_list[args_counter - 1], 1)[1]
-                    if args_counter > 0
-                    else args
-                )
-            elif args_counter > 0:
+    # Пробуем простой вызов типа
+    try:
+        return annotation(value)
+    except Exception as e:
+        raise ValueError(str(e)) from None
+
+
+def parse_command(func: Callable, args: str) -> Tuple[List[Any], Dict[str, Any]]:
+    sig = inspect.signature(func)
+    params = list(sig.parameters.values())
+
+    # пропускаем служебные client, message
+    user_params = params[2:]
+
+    # запрет *args/**kwargs
+    for p in user_params:
+        if p.kind == p.VAR_POSITIONAL:
+            raise TypeError(f'Positional var are not supported. Remove "*{p.name}".')
+        if p.kind == p.VAR_KEYWORD:
+            raise TypeError(f'Keyword var are not supported. Remove "**{p.name}".')
+
+    tokens: List[str] = shlex.split(args or '', posix=True)
+    args_used = 0
+    out_args: List[Any] = []
+    out_kwargs: Dict[str, Any] = {}
+
+    kw_only_params = [p for p in user_params if p.kind == p.KEYWORD_ONLY]
+    if len(kw_only_params) > 1:
+        # текущая версия поддерживает только один KEYWORD_ONLY
+        raise TypeError('Only one keyword-only parameter is supported.')
+
+    # позиционные (включая POSITIONAL_OR_KEYWORD)
+    for p in user_params:
+        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD):
+            if args_used < len(tokens):
+                raw = tokens[args_used]
                 try:
-                    parts = args.split(args_list[args_counter - 1], 1)
-                    if len(parts) > 1:
-                        arg = parts[1].strip()
-                except (IndexError, ValueError):
-                    pass
-
-            if not arg:
-                if param.default != param.empty:
-                    arg = param.default
-
-            elif param.annotation != inspect._empty:
-                try:
-                    if param.annotation != Any:
-                        if arg == '':
-                            arg = param.annotation()
-                        else:
-                            arg = param.annotation(arg)
+                    val = _cast(raw, p.annotation)
                 except ValueError:
+                    # ПРАВИЛО: мягкий переход к KEYWORD_ONLY только если
+                    #  - у позиционного есть дефолт,
+                    #  - есть KEYWORD_ONLY,
+                    #  - текущий токен — ПОСЛЕДНИЙ (иначе это реальная ошибка ввода).
+                    if (
+                        p.default is not inspect._empty and kw_only_params and (args_used + 1 == len(tokens))
+                    ):
+                        out_args.append(p.default)
+                        # токен НЕ потребляем — он станет хвостом для KEYWORD_ONLY
+                        continue
                     raise errors.ArgumentTypeError(
-                        name=name,
-                        message_object=None,
-                        parsed_args=args_list,
-                        parsed_kwargs=result_kwargs,
-                        errored_arg_name=name,
-                        errored_arg_position=args_counter + 1,
-                        required_type=param.annotation
+                        name=p.name, message_object=None,
+                        parsed_args=tokens, parsed_kwargs=out_kwargs,
+                        errored_arg_name=p.name, errored_arg_position=args_used + 1,
+                        required_type=p.annotation
                     ) from None
-            result_kwargs[name] = arg.strip()
+                else:
+                    out_args.append(val)
+                    args_used += 1  # потребили токен только при успехе
+            else:
+                if p.default is inspect._empty:
+                    raise errors.MissingArgumentError(
+                        name=p.name, message_object=None,
+                        missing_arg_name=p.name, missing_arg_position=len(out_args) + 1,
+                        parsed_args=tokens, parsed_kwargs=out_kwargs
+                    )
+                out_args.append(p.default)
 
-        args_counter += 1
+    # KEYWORD_ONLY: забирает ВЕСЬ остаток строки (tail)
+    if kw_only_params:
+        p = kw_only_params[0]
+        remainder = ' '.join(tokens[args_used:]).strip()
 
-    return result_args, result_kwargs
+        if not remainder:
+            if p.default is inspect._empty:
+                raise errors.MissingArgumentError(
+                    name=p.name, message_object=None,
+                    missing_arg_name=p.name, missing_arg_position=args_used + 1,
+                    parsed_args=tokens, parsed_kwargs=out_kwargs
+                )
+            out_kwargs[p.name] = p.default
+        else:
+            try:
+                out_kwargs[p.name] = _cast(remainder, p.annotation)
+            except ValueError:
+                raise errors.ArgumentTypeError(
+                    name=p.name, message_object=None,
+                    parsed_args=tokens, parsed_kwargs=out_kwargs,
+                    errored_arg_name=p.name, errored_arg_position=args_used + 1,
+                    required_type=p.annotation
+                ) from None
+
+        # мы съели весь хвост
+        args_used = len(tokens)
+
+    # лишние токены возможны только если НЕТ KEYWORD_ONLY
+    if args_used < len(tokens):
+        raise errors.ArgumentTypeError(
+            name='__extra__', message_object=None,
+            parsed_args=tokens, parsed_kwargs=out_kwargs,
+            errored_arg_name='__extra__', errored_arg_position=args_used + 1,
+            required_type=None
+        )
+
+    return out_args, out_kwargs
 
 
 if __name__ == '__main__':
-    def func(message: ..., user: str, ban_time: int = 120, *, reason: str):
+    def func(client: ..., message: ..., user: str, ban_time: int = 120, *, reason: str = 'No reason'):
         print('---')
         print(user)
         print('---')
@@ -192,8 +197,9 @@ if __name__ == '__main__':
         print(type(ban_time))
         print(type(reason))
 
-    args = 'Notch -1 X-Ray'
+    command_text = '''/ban Notch 10 "reason" extra'''
 
-    result_args, result_kwargs = parse_command(func, args)
+    _, args = get_command_and_args(command_text, '/')
+    result_args, result_kwargs = parse_command(func, args.strip())
     print(result_args, result_kwargs)
-    func(..., *result_args, **result_kwargs)
+    # func(..., ..., *result_args, **result_kwargs)

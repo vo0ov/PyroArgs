@@ -100,7 +100,7 @@ class PyroArgs:
             permissions_level: int
     ) -> bool:
         if self.permission_checker_func and not await self.permission_checker_func(message, permissions_level):  # noqa
-            error = errors.CommandPermissionError(
+            error = errors.command_permission_error(
                 command=command_name,
                 message=message,
                 permission_level=permissions_level
@@ -120,9 +120,9 @@ class PyroArgs:
             return result_args, result_kwargs
         except SyntaxError as e:
             raise e
-        except errors.MissingArgumentError as e:
+        except errors.missing_argument_error as e:
             await self.events._trigger_missing_argument_error(message, e)
-        except errors.ArgumentTypeError as e:
+        except errors.argument_type_error as e:
             await self.events._trigger_argument_type_error(message, e)
         except Exception as e:
             print(
@@ -165,7 +165,7 @@ class PyroArgs:
             )
             return response
         except Exception as e:
-            error = errors.CommandError(
+            error = errors.command_error(
                 command=command_name,
                 message=message,
                 parsed_args=result_args,

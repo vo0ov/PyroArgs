@@ -1,7 +1,8 @@
-# PyroArgs/errors/ArgumentTypeError.py
-from .ArgumentsError import ArgumentsError
-from typing import List, Any, Dict
-from ..types import Message
+from typing import Any, Dict, List
+
+from pyrogram.types import Message
+
+from .arguments_error import ArgumentsError
 
 
 class ArgumentTypeError(ArgumentsError):
@@ -14,7 +15,7 @@ class ArgumentTypeError(ArgumentsError):
         errored_arg_name: str,
         errored_arg_position: int,
         required_type: type
-    ):
+    ) -> None:
         full_message = (
             f'ArgumentTypeError: Argument "{errored_arg_name}" at position '
             f'{errored_arg_position} cannot convert to required type '

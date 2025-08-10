@@ -88,7 +88,7 @@ async def on_after_use_command(
 @PyAr.events.on_missing_argument_error
 async def on_missing_argument_error(
     message: pyroargs.types.Message,
-    error: pyroargs.errors.MissingArgumentError
+    error: pyroargs.errors.missing_argument_error
 ) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
@@ -99,7 +99,7 @@ async def on_missing_argument_error(
 @PyAr.events.on_argument_type_error
 async def on_argument_type_error(
     message: pyroargs.types.Message,
-    error: pyroargs.errors.ArgumentTypeError
+    error: pyroargs.errors.argument_type_error
 ) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
@@ -110,7 +110,7 @@ async def on_argument_type_error(
 @PyAr.events.on_command_error
 async def on_command_error(
     message: pyroargs.types.Message,
-    error: pyroargs.errors.CommandError
+    error: pyroargs.errors.command_error
 ) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 
@@ -121,7 +121,7 @@ async def on_command_error(
 @PyAr.events.on_command_permission_error
 async def on_command_permission_error(
     message: pyroargs.types.Message,
-    error: pyroargs.errors.CommandPermissionError
+    error: pyroargs.errors.command_permission_error
 ) -> None:
     # * У вас может быть своя функция логирования, это лишь пример * #
 

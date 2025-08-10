@@ -1,4 +1,4 @@
-name: Style and security lint
+name: Tests, style and security lint
 
 on:
     workflow_dispatch:
@@ -14,12 +14,16 @@ jobs:
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
-                  python-version: '3.x'
+                  python-version: "3.x"
 
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip
-                  pip install flake8 flake8-quotes bandit
+                  pip install pytest flake8 flake8-quotes bandit
+
+            - name: Run tests
+              run: |
+                  pytest
 
             - name: Run flake8
               run: |
