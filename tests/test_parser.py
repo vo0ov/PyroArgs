@@ -1,4 +1,3 @@
-# test_parser.py
 import enum
 from typing import Optional, Union
 
