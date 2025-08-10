@@ -32,4 +32,4 @@ jobs:
 
             - name: Run bandit
               run: |
-                  python -m bandit -r . --ignore B101
+                  python -m bandit -r . --skip B101
